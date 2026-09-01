@@ -73,9 +73,19 @@ def test_drop_conversation_removes_rows_and_fts_entries(tmp_path):
 
 def test_already_ingested_and_mark_ingested(tmp_path):
     store = Store(tmp_path / "index.db")
-    assert store.already_ingested("export.zip") is False
-    store.mark_ingested("export.zip", "2026-01-01T00:00:00Z", 42)
-    assert store.already_ingested("export.zip") is True
+    content_hash = "a" * 64
+    assert store.already_ingested(content_hash) is False
+    store.mark_ingested(content_hash, "export.zip", "2026-01-01T00:00:00Z", 42)
+    assert store.already_ingested(content_hash) is True
+
+
+def test_already_ingested_keys_on_content_not_filename(tmp_path):
+    # Anthropic reuses the same filename for every export, so two different
+    # files sharing a name must be tracked as distinct ingests.
+    store = Store(tmp_path / "index.db")
+    store.mark_ingested("hash-one", "conversations-000.zip", "2026-01-01T00:00:00Z", 10)
+    assert store.already_ingested("hash-one") is True
+    assert store.already_ingested("hash-two") is False
 
 
 def test_all_embeddings_skips_null(tmp_path):

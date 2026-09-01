@@ -1,4 +1,5 @@
 import json
+import zipfile
 
 import context_note.ingest as ingest_mod
 from context_note.config import Config, Paths
@@ -95,6 +96,58 @@ def test_ingest_pending_moves_files_and_skips_already_ingested(tmp_path, monkeyp
 
     # A second pass with no new files finds nothing to do.
     assert ingest_pending(paths, cfg, verbose=False) == {}
+
+
+def write_export_zip(path, conversation_id="c1", texts=("first message here",)):
+    raw = [
+        {
+            "uuid": conversation_id,
+            "name": "test convo",
+            "project": {"name": "proj"},
+            "chat_messages": [{"sender": "human", "text": t} for t in texts],
+        }
+    ]
+    # Fixed date_time so identical content always produces byte-identical
+    # zips -- zipfile otherwise stamps each entry with the current time,
+    # which would make file_hash() differ between calls even for what
+    # should count as "the same file".
+    info = zipfile.ZipInfo("conversations.json", date_time=(2026, 1, 1, 0, 0, 0))
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr(info, json.dumps(raw))
+
+
+def test_ingest_pending_reingests_same_filename_with_new_content(tmp_path, monkeypatch):
+    # Anthropic reuses the same filename (e.g. conversations-000.zip) for
+    # every export -- a stale re-export must not be silently skipped just
+    # because a file of that name was already processed once before.
+    monkeypatch.setattr(ingest_mod, "embed_batch", fake_embed_batch)
+    paths = make_paths(tmp_path)
+    cfg = Config(min_message_chars=1)
+
+    write_export_zip(paths.imports / "conversations-000.zip", conversation_id="c1")
+    first = ingest_pending(paths, cfg, verbose=False)
+    assert first == {"conversations-000.zip": 1}
+
+    # Re-downloading gives the same filename but different content.
+    write_export_zip(
+        paths.imports / "conversations-000.zip",
+        conversation_id="c2",
+        texts=("a completely new conversation", "with different content entirely"),
+    )
+    second = ingest_pending(paths, cfg, verbose=False)
+    assert second == {"conversations-000.zip": 2}
+
+    store = Store(paths.index)
+    assert store.stats()["conversations"] == 2
+
+    # An unchanged re-download of the exact same bytes is still skipped.
+    write_export_zip(
+        paths.imports / "conversations-000.zip",
+        conversation_id="c2",
+        texts=("a completely new conversation", "with different content entirely"),
+    )
+    third = ingest_pending(paths, cfg, verbose=False)
+    assert third == {}
 
 
 def test_ingest_pending_records_failure_without_raising(tmp_path, monkeypatch):
