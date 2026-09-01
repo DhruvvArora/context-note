@@ -54,11 +54,43 @@ Security → Files & Folders).
 
 There is no API for reading your claude.ai conversations, so the export itself
 stays manual: in Claude, go to Settings > Privacy > Export data, wait for the
-email, and download the zip.
+email, and download the data.
+
+As of the current export flow, "download the data" is two steps, not one.
+The email links to a `manifest-*.json`, not a single zip -- that manifest
+lists several category files (`conversations`, `projects`, `users`,
+`memories`), each behind a one-time-use signed URL. Only the conversations
+one matters here:
+
+```json
+{
+  "category": "conversations",
+  "export_url": "https://claude.ai/export/.../download/...",
+  "filename": "conversations-000.zip"
+}
+```
+
+Open that `export_url` in your browser (it needs your logged-in session, so
+it has to be a real click, not a script) to actually download
+`conversations-000.zip`. Once that lands, the watcher picks it up like any
+other export.
 
 Everything after that is automatic. The watcher polls `~/Downloads`, spots the
 export by name, waits until the file stops growing, copies it into `imports/`,
 and indexes it. You never move a file or run `ingest` by hand.
+
+### Project attribution doesn't survive this export flow
+
+Search results and `--exclude-project`/`project` filtering will show
+`(no project)` for anything ingested from the current export flow, even for
+conversations you've organized into projects in the app. This isn't a
+context-note bug: the `conversations-*.zip` no longer carries any
+project reference on each conversation, and the `projects-*.zip` (project
+names/descriptions) has no conversation-membership field either. Checked
+both directly -- there is currently no data in the export that links the
+two, so there's nothing for the parser to recover. If Anthropic adds that
+link back to the export schema, `parser.py`'s `parse_conversations()` is
+where to wire it back in.
 
 ```bash
 context-note watch                  # foreground, ctrl-c to stop
@@ -127,8 +159,9 @@ Use `excluded_projects` for anything you want to stay siloed. The point is opt-i
 ## Limits
 
 - Claude Desktop only. Browser claude.ai reaches remote connectors over HTTPS, not local stdio servers. A remote mode is plausible later; the retrieval layer is transport-agnostic on purpose.
-- Ingestion is batch. Requesting the export is one manual click; everything after it is automatic.
-- The export schema is undocumented and can change. The parser skips shapes it does not recognize rather than failing, but a large format change will need a fix.
+- Ingestion is batch. Requesting the export takes one manual click, downloading the conversations file from the resulting manifest takes another (see "Load your history"); everything after that is automatic.
+- No project attribution. The current export flow doesn't include any link between a conversation and the project it's filed under, so results always show `(no project)` and project filtering is a no-op regardless of how you've organized chats in the app. See "Load your history" above.
+- The export schema is undocumented and can change. The parser skips shapes it does not recognize rather than failing, but a large format change will need a fix -- as happened with the move to the manifest + per-category zip format.
 
 ## License
 
