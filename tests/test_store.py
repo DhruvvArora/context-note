@@ -88,6 +88,14 @@ def test_already_ingested_keys_on_content_not_filename(tmp_path):
     assert store.already_ingested("hash-two") is False
 
 
+def test_already_opened_manifest_and_mark_manifest_opened(tmp_path):
+    store = Store(tmp_path / "index.db")
+    content_hash = "b" * 64
+    assert store.already_opened_manifest(content_hash) is False
+    store.mark_manifest_opened(content_hash, "manifest-abc.json", "2026-01-01T00:00:00Z")
+    assert store.already_opened_manifest(content_hash) is True
+
+
 def test_all_embeddings_skips_null(tmp_path):
     store = Store(tmp_path / "index.db")
     store.add(make_chunk(text="has an embedding"), [1.0, 2.0])
