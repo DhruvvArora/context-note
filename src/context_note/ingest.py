@@ -1,5 +1,6 @@
 """Turn export files in imports/ into rows in the index."""
 
+import hashlib
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +11,14 @@ from .parser import read_export
 from .store import Store
 
 BATCH = 64
+
+
+def file_hash(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
 
 
 def ingest_file(path: Path, store: Store, cfg: Config, verbose: bool = True) -> int:
@@ -54,9 +63,11 @@ def ingest_pending(paths: Paths, cfg: Config, verbose: bool = True) -> dict:
         if p.is_file() and p.suffix in {".zip", ".json"}
     )
     for path in candidates:
-        if store.already_ingested(path.name):
+        content_hash = file_hash(path)
+        if store.already_ingested(content_hash):
             if verbose:
                 print(f"skip {path.name} (already ingested)")
+            shutil.move(str(path), str(paths.processed / path.name))
             continue
         if verbose:
             print(f"ingesting {path.name}")
@@ -67,7 +78,7 @@ def ingest_pending(paths: Paths, cfg: Config, verbose: bool = True) -> dict:
             results[path.name] = 0
             continue
         store.mark_ingested(
-            path.name, datetime.now(timezone.utc).isoformat(), count
+            content_hash, path.name, datetime.now(timezone.utc).isoformat(), count
         )
         shutil.move(str(path), str(paths.processed / path.name))
         results[path.name] = count

@@ -42,7 +42,8 @@ CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
 END;
 
 CREATE TABLE IF NOT EXISTS ingested (
-    source_name TEXT PRIMARY KEY,
+    content_hash TEXT PRIMARY KEY,
+    source_name TEXT,
     ingested_at TEXT,
     chunk_count INTEGER
 );
@@ -75,16 +76,23 @@ class Store:
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
 
-    def already_ingested(self, source_name: str) -> bool:
+    def already_ingested(self, content_hash: str) -> bool:
+        """Keyed on content, not filename: Anthropic reuses the same
+        filename (e.g. conversations-000.zip) for every export, so a
+        filename check would treat every re-export as already seen and
+        silently skip genuinely new data.
+        """
         cur = self.conn.execute(
-            "SELECT 1 FROM ingested WHERE source_name = ?", (source_name,)
+            "SELECT 1 FROM ingested WHERE content_hash = ?", (content_hash,)
         )
         return cur.fetchone() is not None
 
-    def mark_ingested(self, source_name: str, when: str, count: int) -> None:
+    def mark_ingested(
+        self, content_hash: str, source_name: str, when: str, count: int
+    ) -> None:
         self.conn.execute(
-            "INSERT OR REPLACE INTO ingested VALUES (?, ?, ?)",
-            (source_name, when, count),
+            "INSERT OR REPLACE INTO ingested VALUES (?, ?, ?, ?)",
+            (content_hash, source_name, when, count),
         )
         self.conn.commit()
 

@@ -104,7 +104,9 @@ with Task Scheduler.
 
 Re-export whenever you want to refresh. Exports are full snapshots, so
 re-ingesting replaces prior copies of the same conversations rather than
-duplicating them, and the watcher skips files it has already seen.
+duplicating them, and the watcher skips a file it's already ingested --
+by content hash, not filename, since Anthropic reuses the same filename
+(`conversations-000.zip`) for every export.
 
 ### Why the export step isn't automated
 

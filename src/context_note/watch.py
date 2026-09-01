@@ -76,7 +76,15 @@ def is_stable(path: Path, seen: dict[Path, tuple[int, int]]) -> bool:
 
 
 def collect(watch_dirs: list[Path], paths: Paths, seen: dict) -> list[Path]:
-    """Move stable export archives into imports/. Copies, never deletes."""
+    """Move stable export archives into imports/. Copies, never deletes.
+
+    Only checks whether a copy is already waiting in imports/ -- not
+    whether one was already processed. Anthropic reuses the same filename
+    (e.g. conversations-000.zip) for every export, so a "was this filename
+    already processed" check would treat every re-export as a duplicate.
+    Content-level dedup happens in ingest.ingest_pending() instead, which
+    can tell an unchanged re-download from a genuinely new export.
+    """
     moved = []
     for directory in watch_dirs:
         if not directory.is_dir():
@@ -85,7 +93,7 @@ def collect(watch_dirs: list[Path], paths: Paths, seen: dict) -> list[Path]:
             if not candidate.is_file() or not looks_like_export(candidate):
                 continue
             target = paths.imports / candidate.name
-            if target.exists() or (paths.processed / candidate.name).exists():
+            if target.exists():
                 continue
             if not is_stable(candidate, seen):
                 continue
