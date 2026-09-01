@@ -23,6 +23,33 @@ context-note install --service   # runs the watcher in the background
 
 Restart Claude Desktop.
 
+### If Claude Desktop doesn't pick up the server
+
+`context-note install` registers the server the classic way, by writing to
+`claude_desktop_config.json`. On newer ("Cowork") Claude Desktop builds this
+can silently not work: local MCP server support there is sometimes
+feature-gated off entirely, independent of what's in the config file — the
+app just shows "No servers added" no matter what the file contains, and
+`~/Library/Logs/Claude/mcp.log` stays empty because it never even attempts
+to load anything.
+
+If that's what you're seeing, use the `.mcpb` Desktop Extension format
+instead — a separate, currently-working install path on the same builds:
+
+```bash
+npm install -g @anthropic-ai/mcpb
+python packaging/mcpb/build.py
+```
+
+Then drag the resulting `packaging/mcpb/context-note.mcpb` onto Claude
+Desktop's Settings → Extensions drop zone. See
+[`packaging/mcpb/build.py`](packaging/mcpb/build.py) for how it works and a
+macOS permissions gotcha (a sandboxed Python subprocess can get denied
+access to a venv living under `~/Documents`, `~/Desktop`, or `~/Downloads`
+even after granting Claude itself folder access — the fix is granting that
+specific Python binary its own access under System Settings → Privacy &
+Security → Files & Folders).
+
 ## Load your history
 
 There is no API for reading your claude.ai conversations, so the export itself
