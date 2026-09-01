@@ -1,0 +1,17 @@
+{
+  "manifest_version": "0.3",
+  "name": "context-note",
+  "version": "0.1.0",
+  "description": "Local, cross-project search over your Claude conversation history.",
+  "author": {
+    "name": "Dhruv Arora"
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "server/main.py",
+    "mcp_config": {
+      "command": "PYTHON_EXECUTABLE_PLACEHOLDER",
+      "args": ["-m", "context_note.server"]
+    }
+  }
+}
