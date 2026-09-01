@@ -52,6 +52,15 @@ def parse_conversations(raw: list) -> Iterator[Message]:
         if not convo_id:
             continue
         name = convo.get("name") or "(untitled)"
+        # The newer Settings > Privacy > Export data flow splits exports into
+        # separate conversations/projects/users/memories files, and the
+        # conversations one no longer carries any project reference at all
+        # (checked: no "project" or "project_uuid" key, and the projects
+        # file has no conversation-membership field either). There is
+        # currently no way to recover this association from an export, so
+        # project_name stays None for data from that flow -- this is not a
+        # parsing bug, the data just isn't there. The dict/str handling
+        # below is kept for older exports that do carry it.
         project = convo.get("project")
         project_name = None
         if isinstance(project, dict):

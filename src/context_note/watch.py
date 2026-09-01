@@ -1,10 +1,17 @@
 """Watch for new Claude export archives and ingest them automatically.
 
-Removes every manual step after the download: you click Export data, the file
-lands in Downloads, and this picks it up. Polls rather than using inotify so
-the same code works on macOS, Linux, and Windows with no extra dependency.
+Once the conversations zip lands in Downloads, this picks it up with no
+further steps. Polls rather than using inotify so the same code works on
+macOS, Linux, and Windows with no extra dependency.
+
+As of the newer Settings > Privacy > Export data flow, getting that zip
+still takes one manual click beyond the export request itself: the email
+links to a manifest.json of one-time-use download URLs (one per category --
+conversations, projects, users, memories), and only the conversations one
+needs downloading here. See looks_like_export() below and the README.
 """
 
+import re
 import shutil
 import time
 from pathlib import Path
@@ -23,18 +30,35 @@ def default_watch_dirs() -> list[Path]:
     return [d for d in (downloads,) if d.is_dir()]
 
 
+CONVERSATIONS_BATCH_RE = re.compile(r"^conversations-\d+\.zip$")
+
+
 def looks_like_export(path: Path) -> bool:
     """Anthropic names exports with a date stamp, but users rename things.
 
     Match on shape rather than exact filename: a zip whose name mentions the
-    export, or any conversations.json.
+    export, any conversations.json, or a conversations-NNN.zip batch file.
+
+    As of the newer Settings > Privacy > Export data flow, a request no
+    longer produces one zip. It emails a manifest-*.json listing several
+    category zips (conversations, projects, users, memories) behind
+    one-time-use signed URLs, so only the conversations-NNN.zip the user
+    downloads from that manifest is relevant here -- the manifest itself
+    isn't ingestable, and the other categories carry no conversation
+    content (see the "Load your history" section of the README for why
+    project attribution isn't recoverable from this format).
     """
     name = path.name.lower()
     if path.suffix == ".json":
         return name == "conversations.json"
     if path.suffix != ".zip":
         return False
-    return "claude" in name or "export" in name or "data-" in name
+    return (
+        "claude" in name
+        or "export" in name
+        or name.startswith("data-")
+        or bool(CONVERSATIONS_BATCH_RE.match(name))
+    )
 
 
 def is_stable(path: Path, seen: dict[Path, tuple[int, int]]) -> bool:
