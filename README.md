@@ -54,13 +54,11 @@ Security → Files & Folders).
 
 There is no API for reading your claude.ai conversations, so the export itself
 stays manual: in Claude, go to Settings > Privacy > Export data, wait for the
-email, and download the data.
+email, and click through.
 
-As of the current export flow, "download the data" is two steps, not one.
-The email links to a `manifest-*.json`, not a single zip -- that manifest
-lists several category files (`conversations`, `projects`, `users`,
-`memories`), each behind a one-time-use signed URL. Only the conversations
-one matters here:
+The current export flow emails a `manifest-*.json` rather than a zip
+directly -- that manifest lists several category files (`conversations`,
+`projects`, `users`, `memories`), each behind a one-time-use signed URL:
 
 ```json
 {
@@ -70,10 +68,14 @@ one matters here:
 }
 ```
 
-Open that `export_url` in your browser (it needs your logged-in session, so
-it has to be a real click, not a script) to actually download
-`conversations-000.zip`. Once that lands, the watcher picks it up like any
-other export.
+With the watcher running, you don't need to open that file yourself: once
+the manifest lands in `~/Downloads`, `handle_manifests()` in `watch.py`
+opens the conversations `export_url` in your default browser for you. That
+still needs your logged-in session to actually complete the download (it's
+launching a URL, not scripting a request), so it's a real click either way
+-- but it's the browser tab that opens for you, not a JSON file you have to
+read. Set `auto_open_export_manifest` to `false` in
+`~/.context-note/config.json` to find and open that link by hand instead.
 
 Everything after that is automatic. The watcher polls `~/Downloads`, spots the
 export by name, waits until the file stops growing, copies it into `imports/`,
@@ -155,6 +157,7 @@ Edit `~/.context-note/config.json`:
 | `chunk_max_chars` | 1200 | messages under this are never split |
 | `min_message_chars` | 40 | drops "ok", "thanks" |
 | `excluded_projects` | `[]` | project names to never index |
+| `auto_open_export_manifest` | `true` | open the conversations link from an export manifest automatically |
 
 Use `excluded_projects` for anything you want to stay siloed. The point is opt-in bridging, not a global dump.
 

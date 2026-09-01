@@ -55,6 +55,10 @@ class Config:
     excluded_projects: list[str] = None
     # Skip messages shorter than this. Cuts "ok", "thanks", "yes".
     min_message_chars: int = 40
+    # The watcher opens the conversations download link from an export
+    # manifest automatically, in your default browser (see watch.py). Set
+    # False to find and open that link by hand instead.
+    auto_open_export_manifest: bool = True
 
     def __post_init__(self):
         if self.excluded_projects is None:

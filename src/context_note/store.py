@@ -47,6 +47,12 @@ CREATE TABLE IF NOT EXISTS ingested (
     ingested_at TEXT,
     chunk_count INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS manifests_opened (
+    content_hash TEXT PRIMARY KEY,
+    source_name TEXT,
+    opened_at TEXT
+);
 """
 
 
@@ -93,6 +99,26 @@ class Store:
         self.conn.execute(
             "INSERT OR REPLACE INTO ingested VALUES (?, ?, ?, ?)",
             (content_hash, source_name, when, count),
+        )
+        self.conn.commit()
+
+    def already_opened_manifest(self, content_hash: str) -> bool:
+        """Tracked separately from `ingested` and keyed the same way (by
+        content, not filename) so a service restart doesn't re-open an
+        export manifest's one-time-use conversations link a second time --
+        that link is already spent, and re-opening it just shows an error.
+        """
+        cur = self.conn.execute(
+            "SELECT 1 FROM manifests_opened WHERE content_hash = ?", (content_hash,)
+        )
+        return cur.fetchone() is not None
+
+    def mark_manifest_opened(
+        self, content_hash: str, source_name: str, when: str
+    ) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO manifests_opened VALUES (?, ?, ?)",
+            (content_hash, source_name, when),
         )
         self.conn.commit()
 
