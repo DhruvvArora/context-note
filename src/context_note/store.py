@@ -153,10 +153,18 @@ class Store:
         cur = self.conn.execute(
             """SELECT COUNT(*) AS chunks,
                       COUNT(DISTINCT conversation_id) AS conversations,
-                      COUNT(DISTINCT project_name) AS projects
+                      COUNT(DISTINCT project_name) AS projects,
+                      MIN(NULLIF(created_at, '')) AS earliest,
+                      MAX(NULLIF(created_at, '')) AS latest
                FROM chunks"""
         )
-        return dict(cur.fetchone())
+        row = dict(cur.fetchone())
+        # Same YYYY-MM-DD truncation search.py uses for the "date" field --
+        # ISO8601 timestamps sort correctly as plain strings, so MIN/MAX
+        # above didn't need to parse them, just truncating for display here.
+        row["earliest"] = (row["earliest"] or "")[:10] or None
+        row["latest"] = (row["latest"] or "")[:10] or None
+        return row
 
     def lexical(self, query: str, limit: int) -> list[sqlite3.Row]:
         return self.conn.execute(

@@ -1,13 +1,19 @@
 from context_note.store import Chunk, Store, pack, unpack
 
 
-def make_chunk(conversation_id="c1", position=0, text="hello world", project="proj"):
+def make_chunk(
+    conversation_id="c1",
+    position=0,
+    text="hello world",
+    project="proj",
+    created_at="2026-01-01T00:00:00Z",
+):
     return Chunk(
         conversation_id=conversation_id,
         conversation_name="convo name",
         project_name=project,
         role="human",
-        created_at="2026-01-01T00:00:00Z",
+        created_at=created_at,
         position=position,
         text=text,
     )
@@ -29,6 +35,43 @@ def test_add_and_stats(tmp_path):
     assert stats["chunks"] == 2
     assert stats["conversations"] == 2
     assert stats["projects"] == 1
+
+
+def test_stats_reports_date_range(tmp_path):
+    store = Store(tmp_path / "index.db")
+    store.add(
+        make_chunk(conversation_id="c1", created_at="2026-06-03T17:19:11.906381Z"),
+        [1.0, 0.0],
+    )
+    store.add(
+        make_chunk(conversation_id="c2", created_at="2026-09-01T16:02:34.372575Z"),
+        [0.0, 1.0],
+    )
+    store.add(
+        make_chunk(conversation_id="c3", created_at="2026-07-15T00:00:00Z"),
+        [0.5, 0.5],
+    )
+    store.commit()
+    stats = store.stats()
+    assert stats["earliest"] == "2026-06-03"
+    assert stats["latest"] == "2026-09-01"
+
+
+def test_stats_date_range_ignores_missing_created_at(tmp_path):
+    store = Store(tmp_path / "index.db")
+    store.add(make_chunk(conversation_id="c1", created_at=""), [1.0, 0.0])
+    store.commit()
+    stats = store.stats()
+    assert stats["earliest"] is None
+    assert stats["latest"] is None
+
+
+def test_stats_date_range_none_on_empty_index(tmp_path):
+    store = Store(tmp_path / "index.db")
+    stats = store.stats()
+    assert stats["chunks"] == 0
+    assert stats["earliest"] is None
+    assert stats["latest"] is None
 
 
 def test_lexical_search_uses_fts(tmp_path):
