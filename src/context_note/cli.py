@@ -4,6 +4,7 @@ import argparse
 import json
 import platform
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -107,6 +108,20 @@ def cmd_install(args) -> int:
     cfg_path.write_text(json.dumps(existing, indent=2))
     print(f"registered context-note in {cfg_path}")
     print("restart Claude Desktop to pick it up")
+
+    from .mcpb import build_mcpb
+
+    mcpb_path = Paths.resolve().ensure().root / "context-note.mcpb"
+    build_mcpb(mcpb_path)
+    print(f"\nalso built {mcpb_path}")
+    print(
+        "On some Claude Desktop builds, local MCP server support like the "
+        "registration above doesn't take effect (it can be feature-gated "
+        "off independent of the config file). If restarting doesn't work, "
+        "drag that file onto Settings -> Extensions instead."
+    )
+    if platform.system() == "Darwin":
+        subprocess.run(["open", "-R", str(mcpb_path)], capture_output=True)
     return 0
 
 

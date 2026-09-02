@@ -33,22 +33,27 @@ app just shows "No servers added" no matter what the file contains, and
 `~/Library/Logs/Claude/mcp.log` stays empty because it never even attempts
 to load anything.
 
-If that's what you're seeing, use the `.mcpb` Desktop Extension format
-instead — a separate, currently-working install path on the same builds:
+If that's what you're seeing, `context-note install` already built a
+fallback for you: `~/.context-note/context-note.mcpb`, a Desktop Extension
+bundle — a separate, currently-working install path on the same builds
+(macOS also reveals it in Finder automatically after `install` runs). Get
+it into Claude Desktop's Settings → Extensions: dragging the file onto the
+drop zone worked reliably; if drag-and-drop doesn't work in your setup, the
+panel usually has its own file picker/browse option as an alternative.
+
+To rebuild it by hand (a custom output path, after moving your venv, etc.)
+without re-running the rest of `install`:
 
 ```bash
-npm install -g @anthropic-ai/mcpb
 python packaging/mcpb/build.py
 ```
 
-Then drag the resulting `packaging/mcpb/context-note.mcpb` onto Claude
-Desktop's Settings → Extensions drop zone. See
-[`packaging/mcpb/build.py`](packaging/mcpb/build.py) for how it works and a
-macOS permissions gotcha (a sandboxed Python subprocess can get denied
-access to a venv living under `~/Documents`, `~/Desktop`, or `~/Downloads`
-even after granting Claude itself folder access — the fix is granting that
-specific Python binary its own access under System Settings → Privacy &
-Security → Files & Folders).
+No Node/npm needed — see [`context_note/mcpb.py`](src/context_note/mcpb.py)
+for how the bundle gets built and a macOS permissions gotcha: a sandboxed
+Python subprocess can get denied access to a venv living under
+`~/Documents`, `~/Desktop`, or `~/Downloads` even after granting Claude
+itself folder access. The fix is granting that specific Python binary its
+own access under System Settings → Privacy & Security → Files & Folders.
 
 ## Load your history
 

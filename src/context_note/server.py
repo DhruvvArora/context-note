@@ -69,7 +69,7 @@ def index_stats() -> str:
 @mcp.prompt(name="da Cross Context", title="Cross Context")
 def search_history(query: str) -> str:
     """Search your past Claude conversations across every project."""
-    return f"Search my other projects and non-project chats for: {query}"
+    return f"Use context-note to search my other projects and non-project chats for: {query}"
 
 
 def main() -> None:
