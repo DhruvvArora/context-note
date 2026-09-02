@@ -61,6 +61,17 @@ def index_stats() -> str:
     return json.dumps(_store.stats(), indent=2)
 
 
+# A prompt rather than a tool: this one shows up in Claude Desktop's picker
+# for choosing to search on purpose, versus search_context above, which
+# Claude calls on its own when something in the conversation calls for it.
+# Its docstring is shown to the user verbatim as the prompt's description,
+# so keep it user-facing -- not documentation for whoever reads this file.
+@mcp.prompt(name="da Cross Context", title="Cross Context")
+def search_history(query: str) -> str:
+    """Search your past Claude conversations across every project."""
+    return f"Search my other projects and non-project chats for: {query}"
+
+
 def main() -> None:
     mcp.run()
 
