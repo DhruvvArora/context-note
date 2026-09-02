@@ -7,6 +7,8 @@
 
 Local, cross-project search over your Claude conversation history, exposed to Claude Desktop as an MCP server.
 
+[Why](#why) · [Example](#example) · [Install](#install) · [Load your history](#load-your-history) · [Use](#use) · [How it works](#how-it-works) · [Configuration](#configuration) · [Limits](#limits)
+
 ## Why
 
 Claude scopes context strictly. Each project has its own memory space, and chat search only looks inside the project you are currently in (or, outside a project, only at non-project chats). That isolation is usually what you want. Sometimes it isn't: the thing you need is in a different project, or in a one-off chat you never filed anywhere.
@@ -47,7 +49,8 @@ context-note install --service   # runs the watcher in the background
 
 Restart Claude Desktop.
 
-### If Claude Desktop doesn't pick up the server
+<details>
+<summary><strong>If Claude Desktop doesn't pick up the server</strong> (config silently ignored on some builds -- click to expand)</summary>
 
 `context-note install` registers the server the classic way, by writing to
 `claude_desktop_config.json`. On newer ("Cowork") Claude Desktop builds this
@@ -93,6 +96,8 @@ Python subprocess can get denied access to a venv living under
 itself folder access. The fix is granting that specific Python binary its
 own access under System Settings → Privacy & Security → Files & Folders.
 
+</details>
+
 ## Load your history
 
 There is no API for reading your claude.ai conversations, so the export itself
@@ -105,10 +110,25 @@ stays manual:
 2. Pick a date range and click **Export**.
 3. Wait for the email and click through. Anthropic's own copy says this "typically takes a few hours but may take up to 12 hours depending on the size of your data" -- in practice it's usually been quick, but don't be surprised if a large history takes a while.
 
-Prefer not to sit through the wait yourself? See "Tip: use Computer Use to
-click through the export request" below -- Cowork (or Claude Desktop) can
-run steps 1-3 for you, including finding the resulting email, if you paste
-in the script from that section.
+Triggering the export itself isn't automated by context-note: doing so would
+mean driving claude.ai's internal, undocumented endpoints with your session
+cookie, which breaks whenever the frontend changes and puts every user's
+session token in the blast radius for a public tool. One click a month is
+the better trade.
+
+> [!TIP]
+> Don't want to click through any of it yourself? Claude Desktop's Computer
+> Use (or Cowork) can run the whole request-and-download flow for you --
+> including finding the resulting email -- if you paste in a ready-made
+> script. See **[Automate this with Computer Use](#automate-this-with-computer-use)** below.
+
+Everything from here on *is* automatic. With the watcher running, once the
+manifest email's file lands in `~/Downloads`, the watcher spots it, opens
+the download link for you, waits for the file to finish downloading, and
+indexes it -- you never move a file or run `ingest` by hand.
+
+<details>
+<summary>What actually happens after you click Export (manifest format, auto-open, re-exports)</summary>
 
 The current export flow emails a `manifest-*.json` rather than a zip
 directly -- that manifest lists several category files (`conversations`,
@@ -131,23 +151,6 @@ launching a URL, not scripting a request), so it's a real click either way
 read. Set `auto_open_export_manifest` to `false` in
 `~/.context-note/config.json` to find and open that link by hand instead.
 
-Everything after that is automatic. The watcher polls `~/Downloads`, spots the
-export by name, waits until the file stops growing, copies it into `imports/`,
-and indexes it. You never move a file or run `ingest` by hand.
-
-### Project attribution doesn't survive this export flow
-
-Search results and `--exclude-project`/`project` filtering will show
-`(no project)` for anything ingested from the current export flow, even for
-conversations you've organized into projects in the app. This isn't a
-context-note bug: the `conversations-*.zip` no longer carries any
-project reference on each conversation, and the `projects-*.zip` (project
-names/descriptions) has no conversation-membership field either. Checked
-both directly -- there is currently no data in the export that links the
-two, so there's nothing for the parser to recover. If Anthropic adds that
-link back to the export schema, `parser.py`'s `parse_conversations()` is
-where to wire it back in.
-
 ```bash
 context-note watch                  # foreground, ctrl-c to stop
 context-note watch --dir ~/Desktop  # watch somewhere else, repeatable
@@ -164,14 +167,25 @@ duplicating them, and the watcher skips a file it's already ingested --
 by content hash, not filename, since Anthropic reuses the same filename
 (`conversations-000.zip`) for every export.
 
-### Why the export step isn't automated
+</details>
 
-Triggering an export means driving claude.ai's internal, undocumented endpoints
-with your session cookie. That breaks whenever the frontend changes, and
-shipping it in a public tool puts every user's session token in the blast
-radius. One click a month is the better trade.
+### Project attribution doesn't survive this export flow
 
-### Tip: use Computer Use to click through the export request
+Search results and `--exclude-project`/`project` filtering will show
+`(no project)` for anything ingested from the current export flow, even for
+conversations you've organized into projects in the app. This isn't a
+context-note bug: the `conversations-*.zip` no longer carries any
+project reference on each conversation, and the `projects-*.zip` (project
+names/descriptions) has no conversation-membership field either. Checked
+both directly -- there is currently no data in the export that links the
+two, so there's nothing for the parser to recover. If Anthropic adds that
+link back to the export schema, `parser.py`'s `parse_conversations()` is
+where to wire it back in.
+
+### Automate this with Computer Use
+
+<details>
+<summary><strong>Tip: drive the whole export request with Computer Use</strong> (click to expand a ready-to-paste script)</summary>
 
 The manual steps above -- requesting the export, then finding the email and
 downloading the file -- can themselves be driven by Claude Desktop's
@@ -244,13 +258,29 @@ confirmations along the way regardless -- a real approval or two per
 export, same as clicking through by hand, just without having to navigate
 there yourself.
 
+</details>
+
 ## Use
 
-Inside any Claude Desktop chat:
+Two ways to trigger it inside a Claude Desktop chat:
 
-> Search my other projects for what I decided about the chunking strategy.
+- **Just ask, but name context-note explicitly.** Claude has its own native
+  chat-history search, and if you don't name the tool it can quietly use
+  that instead of context-note's cross-project one:
 
-Claude calls `search_context`, gets ranked snippets with project and date, and can call `get_conversation` to pull a full thread when a snippet is cut off.
+  > Use context-note to search my other projects for what I decided about the chunking strategy.
+
+  <img src="docs/screenshots/search-context-tool-call.png" alt="Claude Desktop chat calling the context-note search_context tool and returning ranked results" width="600">
+
+- **Or use the "Cross Context" prompt.** Click **+ → Add from context-note
+  → Cross Context** and just fill in what you're searching for -- the
+  template already reads "Use context-note to search my other projects and
+  non-project chats for: ...", so you only type the query itself, not the
+  whole sentence.
+
+  <img src="docs/screenshots/cross-context-prompt-input.png" alt="The Cross Context prompt's input dialog, with only a Query field to fill in" width="450">
+
+Either way, Claude calls `search_context`, gets ranked snippets with project and date, and can call `get_conversation` to pull a full thread when a snippet is cut off.
 
 From the terminal:
 
