@@ -1,5 +1,6 @@
 import json
 import zipfile
+from importlib.metadata import PackageNotFoundError, version
 
 from context_note.mcpb import build_mcpb
 
@@ -57,3 +58,21 @@ def test_build_mcpb_creates_parent_directories(tmp_path):
     out = tmp_path / "nested" / "dir" / "context-note.mcpb"
     result = build_mcpb(out, python="/fake/python")
     assert result.exists()
+
+
+def test_build_mcpb_version_matches_installed_package(tmp_path):
+    # Regression test: the manifest's version used to be a separate literal
+    # ("0.1.0") hand-duplicated from pyproject.toml, so a version bump there
+    # wouldn't reach the built bundle unless someone remembered to update
+    # this file too.
+    out = tmp_path / "context-note.mcpb"
+    build_mcpb(out, python="/fake/python")
+
+    with zipfile.ZipFile(out) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+
+    try:
+        expected = version("context-note")
+    except PackageNotFoundError:
+        expected = "0.0.0"
+    assert manifest["version"] == expected

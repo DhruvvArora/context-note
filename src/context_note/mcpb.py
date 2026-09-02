@@ -19,12 +19,12 @@ built file onto Claude Desktop's Settings -> Extensions drop zone.
 import json
 import sys
 import zipfile
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 MANIFEST = {
     "manifest_version": "0.3",
     "name": "context-note",
-    "version": "0.1.0",
     "description": "Local, cross-project search over your Claude conversation history.",
     "author": {"name": "context-note"},
     "server": {
@@ -66,6 +66,17 @@ SERVER_PLACEHOLDER = """\
 """
 
 
+def _package_version() -> str:
+    """The installed context-note version, so the bundle never drifts from
+    pyproject.toml's -- there's only one place that sets the version, this
+    just reads it back rather than duplicating it here by hand.
+    """
+    try:
+        return version("context-note")
+    except PackageNotFoundError:
+        return "0.0.0"
+
+
 def build_mcpb(out_path: Path, python: str | None = None) -> Path:
     """Pack a context-note.mcpb bundle at out_path and return it.
 
@@ -73,6 +84,7 @@ def build_mcpb(out_path: Path, python: str | None = None) -> Path:
     one has context-note installed if called from within context-note itself.
     """
     manifest = json.loads(json.dumps(MANIFEST))
+    manifest["version"] = _package_version()
     manifest["server"]["mcp_config"]["command"] = python or sys.executable
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
