@@ -126,9 +126,10 @@ radius. One click a month is the better trade.
 
 ### Tip: use Computer Use to click through the export request
 
-The one manual step above (Settings > Privacy > Export data) can itself be
-driven by Claude Desktop's Computer Use (Beta), so you never have to leave
-the chat to request the export. Two ways to point it at claude.ai:
+The manual steps above -- requesting the export, then finding the email and
+downloading the file -- can themselves be driven by Claude Desktop's
+Computer Use (Beta), so you never have to leave the chat. Two ways to point
+it at claude.ai:
 
 - **Claude Desktop's built-in Browser pane.** This is a clean browser profile
   with none of your saved logins, so it needs you to sign in once per
@@ -145,35 +146,56 @@ the chat to request the export. Two ways to point it at claude.ai:
   same way -- Claude can act in your logged-in tab directly. Use this over
   the Browser pane when it's available.
 
+If Claude Desktop also has a Gmail connector enabled for the account the
+export email goes to, it can go one step further: find the "Your data is
+ready for download" email itself and open the download link, so the only
+thing you do by hand is drop the resulting file into `~/Downloads` (or let
+the watcher's default location already cover it). One real gotcha from
+using this live: the download link inside that email is **single-use** --
+clicking it a second time (even by accident, e.g. a mail client's own link
+scanner opening it, or Claude retrying after a page that just looked
+unfinished) burns it, and it comes back as "expired -- please request a new
+export." If that happens, the fix is just requesting a fresh export, which
+emails a new, unused link.
+
 Either way, paste something like this into a Claude Desktop chat to run the
-whole request with minimal back-and-forth:
+whole thing with minimal back-and-forth:
 
 ```
-Use Computer Use to request a data export from claude.ai for me:
+Use Computer Use (and Gmail, if connected) to get me a fresh claude.ai data
+export end to end:
 
 1. Open claude.ai and go to Settings > Privacy > Export data (sign in first
    if you land on a login screen -- that's expected, go ahead).
 2. Click "Export data" / "Request export".
 3. If a dialog asks you to confirm the export request (or to replace an
    existing pending request), confirm it -- yes, proceed, this is intentional.
-4. Once the request is submitted, stop. Don't wait around: the confirmation
-   email can take a while, and context-note's watcher will pick up the
-   manifest from ~/Downloads automatically once it arrives.
+4. Once the request is submitted, check Gmail for an email from Anthropic
+   titled "Your data is ready for download" -- this can take a few minutes,
+   so if it's not there yet, stop and tell me instead of repeatedly
+   re-checking. Use the most recent matching email if there's more than one.
+5. Open the download link from that email exactly once. It's single-use --
+   if it comes back "expired" or "already used," don't retry it or search
+   for another old email; tell me and I'll decide whether to request a new
+   export.
+6. Once the file downloads, stop -- context-note's watcher picks it up from
+   ~/Downloads automatically from there.
 
 Treat every confirmation dialog in this flow as pre-approved and answer
 "yes" / "export" / "confirm" without asking me first. Only stop and ask if
-something doesn't match this -- an error, a CAPTCHA, or a page that isn't
-what's described above.
+something doesn't match this -- an error, a CAPTCHA, an expired/used link,
+or a page that isn't what's described above.
 ```
 
 Worth being honest about the limits of that script: Anthropic's own
 consequential-action confirmation (the "are you sure" checkpoint Claude
-shows before an irreversible click) is a platform-level safety behavior,
-not something a pasted prompt can configure away. Pre-answering the
-expected checkpoints above cuts most of the back-and-forth, but expect
-Claude to still surface that one built-in confirmation near the final
-Export click either way -- one real approval per export request, same as
-clicking through by hand, just without having to navigate there yourself.
+shows before an irreversible click, including the download itself) is a
+platform-level safety behavior, not something a pasted prompt can configure
+away. Pre-answering the expected checkpoints above cuts most of the
+back-and-forth, but expect Claude to still surface a couple of built-in
+confirmations along the way regardless -- a real approval or two per
+export, same as clicking through by hand, just without having to navigate
+there yourself.
 
 ## Use
 
