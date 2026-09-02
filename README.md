@@ -272,7 +272,7 @@ Two ways to trigger it inside a Claude Desktop chat:
 
   <img src="docs/screenshots/search-context-tool-call.png" alt="Claude Desktop chat calling the context-note search_context tool and returning ranked results" width="600">
 
-- **Or use the "Cross Context" prompt.** Click **+ → Add from context-note
+- **Or use the "Cross Context" prompt.** Click **+ → Connectors → Add from context-note
   → Cross Context** and just fill in what you're searching for -- the
   template already reads "Use context-note to search my other projects and
   non-project chats for: ...", so you only type the query itself, not the
