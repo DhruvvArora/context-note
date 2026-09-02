@@ -1,5 +1,7 @@
 # context-note
 
+[![tests](https://github.com/DhruvvArora/context-note/actions/workflows/tests.yml/badge.svg)](https://github.com/DhruvvArora/context-note/actions/workflows/tests.yml)
+
 Local, cross-project search over your Claude conversation history, exposed to Claude Desktop as an MCP server.
 
 ## Why
