@@ -96,8 +96,19 @@ own access under System Settings → Privacy & Security → Files & Folders.
 ## Load your history
 
 There is no API for reading your claude.ai conversations, so the export itself
-stays manual: in Claude, go to Settings > Privacy > Export data, wait for the
-email, and click through.
+stays manual:
+
+1. In Claude, go to **Settings > Privacy**, then click **Export data** next to "Your data."
+
+   <img src="docs/screenshots/privacy-export-data.png" alt="Claude Settings > Privacy panel, showing the Export data button under Your data" width="600">
+
+2. Pick a date range and click **Export**.
+3. Wait for the email and click through. Anthropic's own copy says this "typically takes a few hours but may take up to 12 hours depending on the size of your data" -- in practice it's usually been quick, but don't be surprised if a large history takes a while.
+
+Prefer not to sit through the wait yourself? See "Tip: use Computer Use to
+click through the export request" below -- Cowork (or Claude Desktop) can
+run steps 1-3 for you, including finding the resulting email, if you paste
+in the script from that section.
 
 The current export flow emails a `manifest-*.json` rather than a zip
 directly -- that manifest lists several category files (`conversations`,
