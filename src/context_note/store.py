@@ -150,10 +150,14 @@ class Store:
         self.conn.commit()
 
     def stats(self) -> dict:
+        # No projects count: the current export format has no link between
+        # a conversation and a project at all (see the README's "Project
+        # attribution doesn't survive this export flow"), so
+        # COUNT(DISTINCT project_name) would just always read 0 -- not
+        # useful information, and it invites "is this broken?" every time.
         cur = self.conn.execute(
             """SELECT COUNT(*) AS chunks,
                       COUNT(DISTINCT conversation_id) AS conversations,
-                      COUNT(DISTINCT project_name) AS projects,
                       MIN(NULLIF(created_at, '')) AS earliest,
                       MAX(NULLIF(created_at, '')) AS latest
                FROM chunks"""

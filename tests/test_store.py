@@ -34,7 +34,7 @@ def test_add_and_stats(tmp_path):
     stats = store.stats()
     assert stats["chunks"] == 2
     assert stats["conversations"] == 2
-    assert stats["projects"] == 1
+    assert "projects" not in stats
 
 
 def test_stats_reports_date_range(tmp_path):
