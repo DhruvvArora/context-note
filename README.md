@@ -1,6 +1,9 @@
 # context-note
 
+![context-note: search results for "chunking strategy" spanning two conversations](docs/banner.svg)
+
 [![tests](https://github.com/DhruvvArora/context-note/actions/workflows/tests.yml/badge.svg)](https://github.com/DhruvvArora/context-note/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Local, cross-project search over your Claude conversation history, exposed to Claude Desktop as an MCP server.
 
@@ -12,10 +15,29 @@ There is no built-in way to bridge that. context-note builds a local index of yo
 
 Everything runs on your machine. No API keys, no accounts, nothing leaves the device.
 
+## Example
+
+```
+$ context-note search "chunking strategy"
+
+[(no project)] Building the ingest pipeline  2026-06-12  (assistant)
+  Went with paragraph-boundary chunking, capped at 1200 chars -- messages
+  under that never get split, and the FTS5/embedding fusion handles the rest.
+
+[(no project)] API redesign notes  2026-04-03  (human)
+  should we reuse the same chunking approach we used for the ingest pipeline,
+  or is this different enough to need its own pass?
+```
+
+That `(no project)` is real, not a placeholder -- see "Project attribution
+doesn't survive this export flow" below for why. Same query works inside a
+Claude Desktop chat, where Claude calls the `search_context` tool directly
+instead of you running the CLI.
+
 ## Install
 
 ```bash
-git clone https://github.com/YOURNAME/context-note
+git clone https://github.com/DhruvvArora/context-note
 cd context-note
 pip install -e .
 context-note init
@@ -38,10 +60,24 @@ to load anything.
 If that's what you're seeing, `context-note install` already built a
 fallback for you: `~/.context-note/context-note.mcpb`, a Desktop Extension
 bundle — a separate, currently-working install path on the same builds
-(macOS also reveals it in Finder automatically after `install` runs). Get
-it into Claude Desktop's Settings → Extensions: dragging the file onto the
-drop zone worked reliably; if drag-and-drop doesn't work in your setup, the
-panel usually has its own file picker/browse option as an alternative.
+(macOS also reveals it in Finder automatically after `install` runs).
+
+1. Click your profile in the bottom-left of Claude Desktop and open **Settings**.
+2. Go to **Extensions**, then drag `context-note.mcpb` onto the drop zone.
+
+   <img src="docs/screenshots/extensions-empty.png" alt="Claude Desktop Extensions panel, empty, with a 'Drag .MCPB or .DXT files here to install' drop zone" width="600">
+
+3. If drag-and-drop doesn't work in your setup, use **Advanced settings → Install extension** instead and pick the file from Finder (`~/.context-note/context-note.mcpb`).
+
+   <img src="docs/screenshots/extensions-install-button.png" alt="Extension settings page with an 'Install extension' button" width="600">
+
+4. Review the install prompt and confirm.
+
+   <img src="docs/screenshots/extensions-install-confirm.png" alt="Install confirmation screen for the context-note extension" width="450">
+
+5. It now shows up under **Installed on your computer**. Click **Configure** if you want to restrict which tools it's allowed to call (`search_context`, `get_conversation`, `index_stats`).
+
+   <img src="docs/screenshots/extensions-installed.png" alt="Extensions panel showing context-note installed, with a Configure button" width="600">
 
 To rebuild it by hand (a custom output path, after moving your venv, etc.)
 without re-running the rest of `install`:
@@ -212,6 +248,17 @@ context-note search "chunking strategy"
 context-note search "auth flow" --exclude-project "Job Search"
 context-note stats
 ```
+
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| `context-note init` | creates `~/.context-note/` and a default `config.json` |
+| `context-note install` | registers the MCP server with Claude Desktop (and builds the `.mcpb` fallback) |
+| `context-note install --service` | also installs the watcher as a background service (launchd/systemd) |
+| `context-note watch` | runs the watcher in the foreground; `--dir` to add a folder, `--once` for a single pass |
+| `context-note search <query>` | searches from the terminal; `--exclude-project` to filter, `--limit` to cap results |
+| `context-note stats` | chunk/conversation counts and the indexed date range |
 
 ## How it works
 
