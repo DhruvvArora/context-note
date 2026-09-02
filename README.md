@@ -124,6 +124,57 @@ with your session cookie. That breaks whenever the frontend changes, and
 shipping it in a public tool puts every user's session token in the blast
 radius. One click a month is the better trade.
 
+### Tip: use Computer Use to click through the export request
+
+The one manual step above (Settings > Privacy > Export data) can itself be
+driven by Claude Desktop's Computer Use (Beta), so you never have to leave
+the chat to request the export. Two ways to point it at claude.ai:
+
+- **Claude Desktop's built-in Browser pane.** This is a clean browser profile
+  with none of your saved logins, so it needs you to sign in once per
+  session before it can reach your account settings. Generic browser control
+  through Computer Use is also capped at view-only by app-category
+  permissions (confirmed live: an installed browser without the extension,
+  e.g. Brave, gets the same restriction), so the final "Export" click still
+  needs a real approval from you -- Claude can get you to that button, but
+  can't complete a consequential click unsupervised.
+- **The Claude in Chrome extension**, if you have actual Chrome installed
+  with the extension enabled. This shares your real, already-logged-in
+  Chrome session instead of a separate sandboxed profile, so there's no
+  sign-in step and it isn't subject to the browser-tier view-only cap the
+  same way -- Claude can act in your logged-in tab directly. Use this over
+  the Browser pane when it's available.
+
+Either way, paste something like this into a Claude Desktop chat to run the
+whole request with minimal back-and-forth:
+
+```
+Use Computer Use to request a data export from claude.ai for me:
+
+1. Open claude.ai and go to Settings > Privacy > Export data (sign in first
+   if you land on a login screen -- that's expected, go ahead).
+2. Click "Export data" / "Request export".
+3. If a dialog asks you to confirm the export request (or to replace an
+   existing pending request), confirm it -- yes, proceed, this is intentional.
+4. Once the request is submitted, stop. Don't wait around: the confirmation
+   email can take a while, and context-note's watcher will pick up the
+   manifest from ~/Downloads automatically once it arrives.
+
+Treat every confirmation dialog in this flow as pre-approved and answer
+"yes" / "export" / "confirm" without asking me first. Only stop and ask if
+something doesn't match this -- an error, a CAPTCHA, or a page that isn't
+what's described above.
+```
+
+Worth being honest about the limits of that script: Anthropic's own
+consequential-action confirmation (the "are you sure" checkpoint Claude
+shows before an irreversible click) is a platform-level safety behavior,
+not something a pasted prompt can configure away. Pre-answering the
+expected checkpoints above cuts most of the back-and-forth, but expect
+Claude to still surface that one built-in confirmation near the final
+Export click either way -- one real approval per export request, same as
+clicking through by hand, just without having to navigate there yourself.
+
 ## Use
 
 Inside any Claude Desktop chat:
